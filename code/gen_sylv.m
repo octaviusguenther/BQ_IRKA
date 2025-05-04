@@ -1,4 +1,7 @@
-% identical with gen_sylv_direct for 1e-3 tested for heat-model n=20
+%solves the generalized Sylvester equation
+%Sigma1.A*X + X*Sigma2.A' + Sigma1.N*X*Sigma2.N2' + Sigma1.b*Sigma2.b'=0
+%by solving the equivalent vectorized linear system via MATLAB's
+%'backslash' operator
 function X = gen_sylv(Sigma_1,Sigma_2,method)
     if (~exist('method','var'))
         method = 'direct';

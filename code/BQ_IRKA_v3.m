@@ -4,12 +4,11 @@ function [Sigma_opt,H2_error_iteratives,changein_errs] = BQ_IRKA_v3(Sigma,r,vara
 %Defaults
 error_evo = false;
 max_iter = 100;
-tol = 1e-14;
+tol = 1e-10;
 Norm_formula = 'P';
 Sigma_r = BQ_system(r,'rand');
 
-%precomputing full order reachability Gramian
-%P = gen_sylv_direct(Sigma,Sigma);
+
 
 %optionals
 for ii = 1:2:nargin-2
@@ -25,6 +24,8 @@ for ii = 1:2:nargin-2
             max_iter = varargin{ii+1};
         elseif strcmp('-initial_guess',varargin{ii})
             Sigma_r = varargin{ii+1};
+        elseif strcmp('-P',varargin{ii})
+            P=varargin{ii+1};
         end
 end
 
@@ -37,8 +38,8 @@ H2_error_iteratives = zeros(max_iter,1);
 
 %precompute the H2-norm of full-order model for the relative error
 if error_evo == true
-
-    h = getH2norm(Sigma,'P');
+    %P = gen_sylv_naive(Sigma,Sigma,100,1e-12);
+    h = getH2norm(Sigma,'P',P);
 end
 
 
@@ -50,7 +51,7 @@ iter = 1;
 
 %compute the H2-error between the inital guess and the FOM
 if error_evo == true
-    H2_error_iteratives(iter)= getErrorH2norm(Sigma,Sigma_r,Norm_formula);
+    H2_error_iteratives(iter)= getErrorH2norm(Sigma,Sigma_r,Norm_formula,P)/h;
 end
 
 %set initial changeinerr to get into the while loop
@@ -60,7 +61,7 @@ while (changein_errs(iter) > tol && iter < max_iter)
     
     %start clock
     iter_start = tic;
-
+    fprintf(1, 'Full-order model dim = %d, Reduced-order model dim =%d\n',n,r);
     fprintf(1, 'Current iterate is k = %d\n', iter)
     fprintf(1, '---------------------------------------\n')
 
@@ -71,32 +72,39 @@ while (changein_errs(iter) > tol && iter < max_iter)
 
     %Solve the sylvester equation V(-D) - AV - NVN_hat = b*b_hat'
     
+    iter_sylv = tic;
     rhs1 = kron(br,Sigma.b);
     V = (kron(-Ar,speye(n)) - kron(speye(r),Sigma.A) - kron(Nr,Sigma.N));
     vect_V = V\rhs1;
-    
+    % fprintf(1, 'Sylvester equation V computed in %.2f s\n',toc(iter_sylv));
+    % fprintf(1, '---------------------------------------\n')
+
     V = reshape(vect_V,[n,r]);
 
     %Solve the sylvester equation 
     % W*(-D) - Ar^T*W - Nr^T*W*N_hat = - Mr*V*M
-
+    
+    iter_sylv2 = tic;
     rhs2 = kron(Mr',Sigma.M)*vect_V;
     W = (kron(Ar',speye(n)) + kron(speye(r),Sigma.A') + kron(Nr',Sigma.N'));
     
     vect_W = W\rhs2; 
+    % fprintf(1, 'Sylvester equation W computed in %.2f s\n',toc(iter_sylv2));
+    % fprintf(1, '---------------------------------------\n')
+    
     W = reshape(vect_W,[n,r]);
     
     %orthogonalization
     [V,~] = qr(V,"econ");
     [W,~] = qr(W,"econ");
-
+    
 
     %Petrov Galerkin Projection
-    olg = W'*V;
+    wtv = W'*V;
 
-    Ar = olg\W'*Sigma.A*V;
-    Nr = olg\W'*Sigma.N*V;
-    br= olg\W'*Sigma.b;
+    Ar = wtv\W'*Sigma.A*V;
+    Nr = wtv\W'*Sigma.N*V;
+    br= wtv\W'*Sigma.b;
     Mr = V'*Sigma.M*V;
     
     
@@ -108,7 +116,7 @@ while (changein_errs(iter) > tol && iter < max_iter)
 
     % Calculating the new mirrorred eigenvalues of (posterior ) Sigma_k
     D_new = eig(full(Ar));
- 
+    
 
     %increase iterator
     iter = iter +1;
@@ -130,6 +138,7 @@ while (changein_errs(iter) > tol && iter < max_iter)
     %calculate convergence criterion
     %which is max_i |u_i^(k+1) - u_i^(k)| and where the eigenvalues are
     %sorted according to their magnitude
+
     changein_errs(iter) = max(abs(sort(eig(D)) - sort(D_new)))/max(abs(eig(D)));
     
     fprintf('change in poles is max_{1<=j<=r} |mu(j)^i - mu(j)^i-1|/|mu(j)^i-1 = %.12f \n', changein_errs(iter))

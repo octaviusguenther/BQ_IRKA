@@ -1,11 +1,20 @@
-function plot_outputs(modelname,full_order,reduced_order)
+function plot_outputs(model,reduced_order)
 
 % initiate Full ordermodel
-FOM = BQ_system(full_order,modelname);
+FOM = model;
 n = FOM.dim;
+modelname = FOM.name;
+tol=1e-10;
 
 %specify input u
-u = @(t) cos(2*pi*t);
+switch modelname
+    case 'heat'
+    %has to be sclaed by a factor of 10 to adjust to the scaling of N
+    u = @(t) 10*cos(2*pi*t);
+
+    case 'flow'
+    u = @(t) cos(2*pi*t);
+end
 
 %specify grid
 t = linspace(0,2,2e+4);
@@ -15,7 +24,7 @@ t = linspace(0,2,2e+4);
 %calculate ROM by applying BQ_IRKA
 %TO DO specify tolerance
 %TO DO specify max_iterations
-ROM = BQ_IRKA_v3(FOM,reduced_order,'-max_iter',500,'-tol',1e-14);
+ROM = BQ_IRKA_v3(FOM,reduced_order,'-max_iter',500,'-tol',tol);
 r = ROM.dim;
 
 %solve ROM

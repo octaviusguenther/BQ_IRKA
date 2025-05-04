@@ -1,6 +1,12 @@
 classdef BQ_system 
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    %This class represents single-input\single-ouput bilinear systems with 
+    %quadratic outputs
+    %dx\dt = Ax + Nxu + bu
+    %dy\dt = x'Mx 
+    %where A,N,M are quadratic matrices, b a vector, x denotes the
+    %(multidimensional) solution of the state equation, 
+    % y denotes the scalar output and u denotes the
+    %the scalar input
 
     properties
         A
@@ -8,21 +14,34 @@ classdef BQ_system
         b
         M
         dim
+        name
     end
                                                  
     methods
-        function obj = BQ_system(n,model,varargin)
-            %UNTITLED2 Construct an instance of this class
-            %   Detailed explanation goes here
+        function obj = BQ_system(n,model)
+            % constructs a BQ-system according to the model chosen
+            %'heat' constructs a (n^2)- dimensional BQ system
+            %'flow' constructs a (n + n^2)- dimensional BQ system
+            %'rand' constructs a n-dimensional BQ system with integer
+            %values ranging from [-10,10] and asymptotic stable A 
+            %'0' creates a n-dimensional BQ system with matrices consisting
+            % of zeroes
+            
+            arguments
+                n {mustBeInteger, mustBePositive}
+                model string
+            end
+            obj.name = model;
             switch model
 
-                case 0
+                case '0'
 
                     obj.A = sparse(n,n);
                     obj.N = sparse(n,n);
                     obj.b = sparse(n,1);
                     obj.M = sparse(n,n);
                     obj.dim = n;
+                    
 
                 case 'heat'
                     [obj.A,obj.N,obj.b,obj.M] = heat_equation_discretization_single(n);
@@ -30,6 +49,7 @@ classdef BQ_system
                     
 
                 case 'rand'
+                    rng(42);
                     obj.A = randi([-10 10],n,n);
                     obj.N = randi([-10 10],n,n);
                     obj.b = randi([-10 10],n,1);
@@ -48,12 +68,14 @@ classdef BQ_system
             
         end
         
+        %checks if a system is asymptotically stable A, i.e. 
+        %eigenvalues of A are all negative
         function b = stability(obj)
             p = poles(obj,'all'); 
             b = all(p(:)<0);
         end
 
-        % returns the the poles of the system
+        % extracts the eigenvalues of A
         function p = poles(obj,all)
             if (~exist('all','var'))
                 p = eig(full(obj.A));
@@ -62,6 +84,7 @@ classdef BQ_system
             end
         end
         
+        %extracts the mirrored eigenvalues of A.
         %in case of convergence the optimal interpolation points are given
         %as -sigma(A_r)
         function p = optimal_points(obj)
@@ -158,10 +181,10 @@ classdef BQ_system
         end
 
 
-        %computes the error | Sigma1 - Sigma2 |
+        %computes the error || Sigma1 - Sigma2 ||_H2
         %opt denotes the method which formula to apply for calculating the
         %norm
-        % FOM_gram can be passed for not computing the large full order
+        % FOM_gram can be passed for not computing the large full-order
         % gramian iteratively
         function error = getErrorH2norm(obj1,obj2,opt,FOM_gram)
 

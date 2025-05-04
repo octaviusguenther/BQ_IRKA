@@ -1,26 +1,31 @@
-%create large Full order System (k=10) and corresponding initial reduced
-%order systems (r=4,5,...)
-%run BQ_IRKA_v3
-%calculate for each initial system the absolute H2 - error between the full
-%order models and the reduced order models
-%Plot the error in a line chart
-function plot_relative_H2_error(model_name,FOM_dim,MAX_ROM_dim)
-k = FOM_dim;
-Sigma = BQ_system(k,model_name);
-n=Sigma.dim;
+%Create either the 'heat' or the 'flow' 
+%full-order System with dimensions FOM_dim and initial random reduced
+%order systems with dimension r=1,...,MAX_ROM_dim).
 
+%Run BQ_IRKA_v3 to compute all the reduced-system systems ranging from
+%dimension r=1,...,MAX_ROM_dim.
+
+%Calculate for each resulting system the relative H2 - error between the full
+%order models and the reduced order models.
+
+%Plot the error in a line chart
+function plot_relative_H2_error(model,MAX_ROM_dim,P) 
+
+Sigma = model;
+n=Sigma.dim;
+model_name = Sigma.name;
 %specify reduced orders and BQ-IRKA options
 reduced_order = 1:MAX_ROM_dim;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ;
-tol = 1e-12;
+tol = 1e-10;
 max_iter = 100;
 Norm_formula ='P';
 
 %pre calculate FOM reachability Gramian to be pass into error H2-norm
 %function
 
-FOM_P_Gram = gen_sylv(Sigma,Sigma);
+FOM_P_Gram = P;
 
-%precompute for the relative error
+%precompute the H_2 norm of the full-order model Sigma
 h = getH2norm(Sigma,Norm_formula,FOM_P_Gram);
 
 %initialize H2_error array
@@ -43,8 +48,10 @@ for iter = 1:size(reduced_order,2)
 
 
         %calculate H2 - Norm
+        iter_rel_error = tic;
         H2_error(iter,1) = getErrorH2norm(Sigma,Sigma_IRKA,Norm_formula,FOM_P_Gram)/h;
-         
+        fprintf(1, 'Rel.Error computed in %.2f s\n',toc(iter_rel_error));
+        fprintf(1, '---------------------------------------\n')
 end
 
 %plot
@@ -53,8 +60,8 @@ semilogy(x,(H2_error(:,1)),'-o');
 
 %plot attributes
 title_string = sprintf('%s-model dim=%d',model_name,n);
-title(title_string);
-legend('random initial guess','Location','northeast')
+title(title_string,'Interpreter','latex');
+legend('BQ-IRKA','Location','northeast')
 xlabel('reduced order','Interpreter','latex');
 ylabel('relative $$\mathcal{H}_2$$ error $$\frac{\|\Sigma_{ROM} - \Sigma_{FOM}\|_{H_2}}{\|\Sigma_{FOM}\|_{H_2}}$$','Interpreter','latex');
 
