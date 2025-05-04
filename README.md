@@ -8,6 +8,7 @@
 - copy the repository
 - TO OBTAIN ALL THE PLOTS IN THE THESIS run ./code/run_all.m in MATLAB 2024b
 
+
 ## repository structure
 -'code/' MATLAB source code
 -'plots/' generated plots
