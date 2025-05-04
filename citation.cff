@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "MATLAB Implementation of the Bilinear-Quadratic Iterative Rational Krylov Algorithm"
+version: 1.0.0.0
+doi: 10.5281/zenodo.15338332
+authors:
+  - family-names: Guenther
+    given-names: Octavius Christoph
+    affiliation: Technical University of Berlin
+date-released: 2025-5-5
+url: https://doi.org/10.5281/zenodo.15338331
+license: MIT
