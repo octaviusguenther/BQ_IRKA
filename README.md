@@ -10,8 +10,8 @@
 
 
 ## repository structure
--'code/' MATLAB source code
--'plots/' generated plots
+- './code/' MATLAB source code
+- './plots/' generated plots
 
 ## tutorial for playing around with BQ-systems
 - create a BQ-system via the console via with "Sigma = BQ_system(dim,model_name)", where modelname is either 'heat','flow','rand'.
